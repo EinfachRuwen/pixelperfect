@@ -1,0 +1,586 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixelPerfect - Bild-Optimierung und Upload</title>
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        #dropzone {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            background-color: white;
+            cursor: pointer;
+        }
+        #preview {
+            max-width: 100%;
+            max-height: 400px;
+            margin: 10px auto;
+            display: block;
+        }
+        #controls {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        .method-button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .method-button:hover {
+            background-color: #45a049;
+        }
+        .method-button.active {
+            background-color: #357a38;
+        }
+        .action-button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .action-button:hover {
+            background-color: #45a049;
+        }
+        .action-button.active {
+            background-color: #357a38;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        #notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            display: none;
+            z-index: 1000;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 80%;
+        }
+        .success {
+            background-color: #4CAF50;
+        }
+        .error {
+            background-color: #f44336;
+        }
+        #linkContainer {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e6f3ff;
+            border-radius: 5px;
+            display: none;
+            text-align: center;
+        }
+        #linkContainer a {
+            color: #0066cc;
+            text-decoration: none;
+            word-break: break-all;
+        }
+        #linkContainer a:hover {
+            text-decoration: underline;
+        }
+        #consoleContainer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 200px;
+            overflow-y: auto;
+            transition: max-height 0.3s ease-out;
+            border-top: 2px solid #333;
+        }
+        #consoleHeader {
+            background-color: #333;
+            padding: 5px 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+        #consoleContent {
+            padding: 10px;
+        }
+        .console-entry {
+            margin-bottom: 5px;
+        }
+        .console-entry.error {
+            color: #ff6b6b;
+        }
+        .console-entry.success {
+            color: #51cf66;
+        }
+      	/* Popup Styles */
+        .popup {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5); /* Black w/ opacity */
+        }
+
+        .popup-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+        }
+
+        #apiKeyInput {
+            width: 80%;
+            padding: 10px;
+            margin: 15px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #saveApiKeyBtn {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 25px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        #saveApiKeyBtn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+      <!-- API-Key Popup -->
+    <div id="apiKeyPopup" class="popup">
+        <div class="popup-content">
+            <span class="close-button">&times;</span>
+            <h2>API-Key eingeben</h2>
+            <input type="password" id="apiKeyInput" placeholder="Gib hier deinen API-Key ein" />
+            <button id="saveApiKeyBtn" class="method-button">Speichern</button>
+        </div>
+    </div>
+    <h1>PixelPerfect</h1>
+    <div id="notification"></div>
+    <div id="linkContainer"></div>
+    <div id="dropzone">
+        Ziehe ein Bild hierher oder klicke zum Auswählen
+        <input type="file" id="fileInput" style="display: none;" accept="image/*">
+    </div>
+    <img id="preview">
+    <div id="controls">
+        <div class="tooltip">
+            <button id="originalBtn" class="method-button active"><i class="fas fa-image"></i> Original</button>
+            <span class="tooltiptext">Lädt das Originalbild ohne Änderungen hoch</span>
+        </div>
+        <div class="tooltip">
+            <button id="smartBtn" class="method-button"><i class="fas fa-magic"></i> Smart</button>
+            <span class="tooltiptext">Optimiert das Bild für beste Qualität bei reduzierter Größe</span>
+        </div>
+        <div class="tooltip">
+            <button id="compactBtn" class="method-button"><i class="fas fa-compress-arrows-alt"></i> Kompakt</button>
+            <span class="tooltiptext">Komprimiert das Bild stark für minimale Dateigröße</span>
+        </div>
+    </div>
+    <button id="uploadButton" style="display: block; margin: 20px auto;" class="action-button">Hochladen</button>
+
+    <div id="consoleContainer">
+        <div id="consoleHeader">Konsole (Klicken zum Auf-/Zuklappen)</div>
+        <div id="consoleContent"></div>
+    </div>
+
+    <script>
+              // Verschlüsselungs-Funktionen (simple XOR-Verschlüsselung)
+        const encryptionKey = 'simpleKey'; // Ein einfacher Schlüssel für die Verschlüsselung
+
+        function encrypt(text) {
+            return btoa(text.split('').map((c, i) => String.fromCharCode(c.charCodeAt(0) ^ encryptionKey.charCodeAt(i % encryptionKey.length))).join(''));
+        }
+
+        function decrypt(encrypted) {
+            return atob(encrypted).split('').map((c, i) => String.fromCharCode(c.charCodeAt(0) ^ encryptionKey.charCodeAt(i % encryptionKey.length))).join('');
+        }
+
+        // Funktionen zum Cookie-Handling
+        function setCookie(name, value, days) {
+            const d = new Date();
+            d.setTime(d.getTime() + (days*24*60*60*1000));
+            const expires = "expires="+ d.toUTCString();
+            document.cookie = name + "=" + value + ";" + expires + ";path=/";
+        }
+
+        function getCookie(name) {
+            const cname = name + "=";
+            const decodedCookie = decodeURIComponent(document.cookie);
+            const ca = decodedCookie.split(';');
+            for(let c of ca) {
+                while (c.charAt(0) === ' ') { c = c.substring(1); }
+                if (c.indexOf(cname) === 0) { return c.substring(cname.length, c.length); }
+            }
+            return "";
+        }
+
+        // Popup-Logik
+        const apiKeyPopup = document.getElementById('apiKeyPopup');
+        const closeButton = document.querySelector('.close-button');
+        const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+
+        // Funktion zum Anzeigen des Popups
+        function showApiKeyPopup() {
+            apiKeyPopup.style.display = 'block';
+        }
+
+        // Funktion zum Schließen des Popups
+        function closeApiKeyPopup() {
+            apiKeyPopup.style.display = 'none';
+        }
+
+        // Event-Listener für das Schließen des Popups
+        closeButton.addEventListener('click', closeApiKeyPopup);
+
+        // Event-Listener für das Speichern des API-Keys
+        saveApiKeyBtn.addEventListener('click', () => {
+            const apiKey = apiKeyInput.value.trim();
+            if (apiKey) {
+                const encryptedKey = encrypt(apiKey);
+                setCookie('apiKey', encryptedKey, 365); // Speichern für 1 Jahr
+                API_KEY = apiKey; // Setzen der globalen API_KEY Variable
+                logToConsole('API-Key gespeichert', 'success');
+                closeApiKeyPopup();
+            } else {
+                showNotification('Bitte gib einen gültigen API-Key ein.', 'error');
+            }
+        });
+
+        // Beim Laden der Seite prüfen, ob der API-Key bereits gespeichert ist
+        window.addEventListener('load', () => {
+            const storedKey = getCookie('apiKey');
+            if (storedKey) {
+                try {
+                    API_KEY = decrypt(storedKey);
+                    logToConsole('API-Key geladen aus Cookies', 'success');
+                } catch (error) {
+                    logToConsole('Fehler beim Entschlüsseln des API-Keys', 'error');
+                    showApiKeyPopup();
+                }
+            } else {
+                showApiKeyPopup();
+            }
+        });
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const uploadButton = document.getElementById('uploadButton');
+        const notification = document.getElementById('notification');
+        const linkContainer = document.getElementById('linkContainer');
+        const methodButtons = document.querySelectorAll('.method-button');
+        const consoleContainer = document.getElementById('consoleContainer');
+        const consoleHeader = document.getElementById('consoleHeader');
+        const consoleContent = document.getElementById('consoleContent');
+
+        const ZIPLINE_SERVER_URL = 'https://zipline.ruwen.nohost.me/api/upload';
+
+        let originalImage = null;
+        let currentMethod = 'original';
+        let isConsoleOpen = false;
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', (e) => e.preventDefault());
+        dropzone.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+        uploadButton.addEventListener('click', uploadToZipLine);
+        consoleHeader.addEventListener('click', toggleConsole);
+        consoleContent.addEventListener('dblclick', copyConsoleToClipboard);
+
+        // Event-Listener für Methodenauswahl-Buttons
+        methodButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                methodButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                currentMethod = button.id.replace('Btn', '');
+                logToConsole(`Aktuelle Methode: ${currentMethod}`);
+            });
+        });
+
+        // Event-Listener für den Hochladen-Button
+        uploadButton.addEventListener('click', uploadToZipLine);
+
+// Entferne jeglichen Event-Listener vom uploadButton, der die Methode ändert
+uploadButton.addEventListener('click', uploadToZipLine);
+        function handleDrop(e) {
+            e.preventDefault();
+            handleFiles(e.dataTransfer.files);
+        }
+
+        function handleFileSelect(e) {
+            handleFiles(e.target.files);
+        }
+
+        function handleFiles(files) {
+            const file = files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    originalImage = e.target.result;
+                    preview.src = originalImage;
+                    uploadButton.style.display = 'block';
+                    logToConsole('Bild erfolgreich geladen', 'success');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                showNotification('Bitte wähle eine gültige Bilddatei aus.', 'error');
+                logToConsole('Ungültige Datei ausgewählt', 'error');
+            }
+        }
+
+        function loadImage(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = src;
+            });
+        }
+
+        async function processImage() {
+            try {
+                const img = await loadImage(originalImage);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                let width = img.width;
+                let height = img.height;
+
+                logToConsole(`Original Abmessungen: ${width}x${height}`);
+
+                switch (currentMethod) {
+                    case 'smart':
+                        [width, height] = calculateDimensions(width, height, 2560);
+                        logToConsole(`Smart Methode - neue Abmessungen: ${width}x${height}`);
+                        break;
+                    case 'compact':
+                        [width, height] = calculateDimensions(width, height, 1280);
+                        logToConsole(`Compact Methode - neue Abmessungen: ${width}x${height}`);
+                        break;
+                    default:
+                        logToConsole('Original Methode - Abmessungen bleiben unverändert.');
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+                const quality = currentMethod === 'compact' ? 0.7 : (currentMethod === 'smart' ? 0.85 : 1.0);
+                const processedDataURL = canvas.toDataURL('image/jpeg', quality);
+                logToConsole(`Verarbeitete Data URL erstellt mit Qualität: ${quality}`);
+                return processedDataURL;
+            } catch (error) {
+                logToConsole('Fehler bei der Bildverarbeitung: ' + error.message, 'error');
+                showNotification('Fehler bei der Bildverarbeitung.', 'error');
+                throw error;
+            }
+        }
+
+        function calculateDimensions(width, height, maxSize) {
+            if (width > maxSize || height > maxSize) {
+                if (width > height) {
+                    height *= maxSize / width;
+                    width = maxSize;
+                } else {
+                    width *= maxSize / height;
+                    height = maxSize;
+                }
+                logToConsole(`Berechnete neue Dimensionen: ${Math.round(width)}x${Math.round(height)}`);
+            }
+            return [Math.round(width), Math.round(height)];
+        }
+
+        async function uploadToZipLine() {
+            if (!originalImage) {
+                showNotification('Bitte wähle zuerst ein Bild aus.', 'error');
+                logToConsole('Kein Bild ausgewählt', 'error');
+                return;
+            }
+
+            if (!['original', 'smart', 'compact'].includes(currentMethod)) {
+                showNotification('Ungültige Methode ausgewählt.', 'error');
+                logToConsole('Ungültige Methode: ' + currentMethod, 'error');
+                return;
+            }
+            try {
+                const processedImageData = await processImage();
+                const blob = await (await fetch(processedImageData)).blob();
+                const formData = new FormData();
+                formData.append('file', blob, 'optimized_image.jpg');
+
+                logToConsole('Bild verarbeitet und zum Hochladen vorbereitet');
+
+                const response = await fetch(ZIPLINE_SERVER_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': API_KEY
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP Fehler! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (data.files && data.files.length > 0) {
+                    const link = data.files[0];
+                    showNotification('Bild erfolgreich hochgeladen und optimiert!', 'success');
+                    displayLink(link);
+                    copyToClipboard(link);
+                    logToConsole('Bild erfolgreich hochgeladen: ' + link, 'success');
+                } else {
+                    throw new Error('Keine Datei-URL in der Antwort gefunden');
+                }
+            } catch (err) {
+                showNotification(`Fehler beim Hochladen: ${err.message}`, 'error');
+                logToConsole('Upload-Fehler: ' + err.message, 'error');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            notification.textContent = message;
+            notification.className = type;
+            notification.style.display = 'block';
+            setTimeout(() => notification.style.display = 'none', 5000);
+        }
+
+        function displayLink(link) {
+            linkContainer.innerHTML = `<p>Link zum optimierten Bild: <a href="${link}" target="_blank">${link}</a></p>`;
+            linkContainer.style.display = 'block';
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('Link in die Zwischenablage kopiert!', 'success');
+                logToConsole('Link in Zwischenablage kopiert', 'success');
+            }, (err) => {
+                logToConsole('Fehler beim Kopieren: ' + err.message, 'error');
+            });
+        }
+
+        function logToConsole(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `console-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            consoleContent.appendChild(entry);
+            consoleContent.scrollTop = consoleContent.scrollHeight;
+        }
+
+        function toggleConsole() {
+            isConsoleOpen = !isConsoleOpen;
+            consoleContainer.style.maxHeight = isConsoleOpen ? '200px' : '30px';
+        }
+
+        function copyConsoleToClipboard() {
+            const consoleText = consoleContent.innerText;
+            navigator.clipboard.writeText(consoleText).then(() => {
+                showNotification('Konsolentext in die Zwischenablage kopiert!', 'success');
+            }, (err) => {
+                showNotification('Fehler beim Kopieren des Konsolentexts', 'error');
+            });
+        }
+
+        // Event-Listener für Doppelklick auf den Konsoleninhalt
+        consoleContent.addEventListener('dblclick', copyConsoleToClipboard);
+
+        // Initial log
+        logToConsole('PixelPerfect gestartet');
+    </script>
+</body>
+</html>
